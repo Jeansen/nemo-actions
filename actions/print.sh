@@ -6,6 +6,7 @@
 #This script needs the following tools: zenity, lp, bc
 declare FILES=()
 declare PIDFILE=$(mktemp)
+declare DEFAULT_PRINTER=$(lpstat -d | cut -d ':' -f2 | xargs)
 
 h=0
 collect() {
@@ -20,6 +21,16 @@ collect() {
     done
 }
 
+slct_prntr() {
+    local printers=($(lpstat -p | grep enabled | awk '{print $2}'))
+    local list f
+    for f in "${printers[@]}"; do
+        [[ $DEFAULT_PRINTER == ${f// } ]] && list="$list TRUE $f" || list="$list FALSE $f"
+    done
+    local selection=$(zenity --hide-header --width 800 --height 600 --list --column Selection --column Printer $list --radiolist --title "Available Printers")
+    [[ -n ${selection// } ]] && DEFAULT_PRINTER="$selection" || exit 0
+}
+
 prnt() {
     _snd() {
         local i x
@@ -27,7 +38,7 @@ prnt() {
 
         local m=${#x[@]} g=0
         ( for i in "${x[@]}"; do
-            lp "$i"
+            lp -d "$DEFAULT_PRINTER" "$i"
             g=$((g+1))
             bc <<< "scale=2; $g/$m*100"
             sleep 0.2
@@ -45,6 +56,7 @@ prnt() {
 
 main() {
     local x
+    slct_prntr
     IFS=";" read -ra x <<< $*
     touch /tmp/x
     (while true; do [[ -e $PIDFILE ]] && sleep 1 || exit 0; done) | zenity --title "Searching files" --progress --pulsate --auto-kill --auto-close &
