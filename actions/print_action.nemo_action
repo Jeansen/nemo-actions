@@ -2,8 +2,9 @@
 Name=Print
 Comment=Printing from Nemo
 
-Exec=<print.sh %F>
+Exec=<scripts/print.sh %F>
 Icon-Name=document-print
 Selection=Any
 Separator=;
 Extensions=dir;txt;pdf;jpg;gif;png
+Dependencies=bc,lp,zenity;
